@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../config/theme';
 import { cargarDatos } from '../services/firestoreService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { formatDate } from '../utils/dates';
 
 export default function HomeScreen({ route, navigation }) {
   const { user } = route.params;
@@ -25,18 +27,6 @@ export default function HomeScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={{ marginLeft: 10 }}>
-          <Text style={{ fontSize: 24, color: '#fff' }}>☰</Text>
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('Login')} style={{ marginRight: 10 }}>
-          <Text style={{ fontSize: 16, color: '#fff' }}>Salir</Text>
-        </TouchableOpacity>
-      ),
-    });
     loadData();
   }, []);
 
@@ -46,13 +36,17 @@ export default function HomeScreen({ route, navigation }) {
   const hoyReg = data?.asistenciaHoy?.length || 0;
   const pct = total > 0 ? Math.round(hoyReg / total * 100) : 0;
 
+  const logout = () => navigation.getParent()?.navigate('Login');
+
   return (
     <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} />}>
-      <View style={styles.banner}>
+      <LinearGradient colors={['#1e3a5f', '#3B82F6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
         <Text style={styles.welcome}>Bienvenido, {user?.nombre || 'Usuario'}</Text>
-        <Text style={styles.date}>{fechaFormateada}</Text>
-        <View style={styles.roleBadge}><Text style={styles.roleText}>{user?.rol?.toUpperCase()}</Text></View>
-      </View>
+        <Text style={styles.subtitle}>{user?.rol || 'Usuario'} • {fechaFormateada}</Text>
+        <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
+          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
+      </LinearGradient>
 
       <View style={styles.statsRow}>
         <View style={styles.statCard}>
@@ -64,33 +58,41 @@ export default function HomeScreen({ route, navigation }) {
           <Text style={styles.statLabel}>Registros Hoy</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statNumber, { color: pct < 50 ? '#EF4444' : colors.primary }]}>{pct}%</Text>
+          <Text style={styles.statNumber}>{pct}%</Text>
           <Text style={styles.statLabel}>Asistencia Hoy</Text>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Registros de Hoy ({hoyReg})</Text>
+        <Text style={styles.sectionTitle}>Registros de {formatDate(hoy)} ({hoyReg})</Text>
         {data?.asistenciaHoy?.length > 0 ? (
-          data.asistenciaHoy.slice(0, 10).map((reg, i) => {
-            const est = data.estudiantes.find(e => e.id === reg.estudianteId);
-            const mat = data.materias.find(m => m.id === reg.materiaId);
-            const aTiempo = reg.estado === 'a tiempo';
-            return (
-              <View key={i} style={styles.recordRow}>
-                <View style={[styles.statusDot, { backgroundColor: aTiempo ? '#10B981' : '#EF4444' }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.recordName}>{est?.nombre || 'Desconocido'}</Text>
-                  <Text style={styles.recordDetail}>{reg.hora} - {mat?.nombre || 'Sin materia'}</Text>
+          <>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.headerText, { flex: 1 }]}>Estudiante</Text>
+              <Text style={[styles.headerText, { flex: 1 }]}>Materia</Text>
+              <Text style={[styles.headerText, { width: 70, textAlign: 'center' }]}>Hora</Text>
+              <Text style={[styles.headerText, { width: 85, textAlign: 'center' }]}>Estado</Text>
+            </View>
+            {data.asistenciaHoy.slice(0, 10).map((reg, i) => {
+              const est = data.estudiantes.find(e => e.id === reg.estudianteId);
+              const mat = data.materias.find(m => m.id === reg.materiaId);
+              const aTiempo = reg.estado === 'a tiempo';
+              return (
+                <View key={i} style={styles.dataRow}>
+                  <Text style={[styles.cellText, { flex: 1 }]}>{est?.nombre || 'Desconocido'}</Text>
+                  <Text style={[styles.cellText, { flex: 1 }]}>{mat?.nombre || 'Sin materia'}</Text>
+                  <Text style={[styles.cellText, { width: 70, textAlign: 'center' }]}>{reg.hora}</Text>
+                  <View style={{ width: 85, alignItems: 'center' }}>
+                    <View style={[styles.badge, { backgroundColor: aTiempo ? '#D1FAE5' : '#FEE2E2' }]}>
+                      <Text style={[styles.badgeText, { color: aTiempo ? '#065F46' : '#991B1B' }]}>
+                        {aTiempo ? 'A tiempo' : 'Tarde'}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: aTiempo ? '#D1FAE5' : '#FEE2E2' }]}>
-                  <Text style={[styles.recordStatus, { color: aTiempo ? '#065F46' : '#991B1B' }]}>
-                    {aTiempo ? 'A tiempo' : 'Tarde'}
-                  </Text>
-                </View>
-              </View>
-            );
-          })
+              );
+            })}
+          </>
         ) : (
           <Text style={styles.emptyText}>No hay registros hoy</Text>
         )}
@@ -100,23 +102,23 @@ export default function HomeScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
-  banner: { backgroundColor: colors.primary, padding: 25, alignItems: 'center' },
-  welcome: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  date: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 5 },
-  roleBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 3, marginTop: 8 },
-  roleText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: -10, paddingHorizontal: 5 },
-  statCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, alignItems: 'center', flex: 1, margin: 5, elevation: 1 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  banner: { borderRadius: 16, padding: 32, paddingHorizontal: 24, marginBottom: 24, marginHorizontal: 16, marginTop: 16 },
+  welcome: { fontSize: 28, fontWeight: '700', color: colors.white, marginBottom: 4 },
+  subtitle: { fontSize: 16, color: colors.white, opacity: 0.9 },
+  logoutBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, alignSelf: 'flex-start', marginTop: 16 },
+  logoutText: { color: colors.white, fontSize: 14, fontWeight: '600' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, marginHorizontal: 16 },
+  statCard: { backgroundColor: colors.white, padding: 20, borderRadius: 12, alignItems: 'center', flex: 1, marginHorizontal: 4, elevation: 2 },
   statNumber: { fontSize: 32, fontWeight: '700', color: colors.primary },
-  statLabel: { fontSize: 14, color: '#6B7280', marginTop: 4 },
-  section: { backgroundColor: '#fff', margin: 15, borderRadius: 12, padding: 20, elevation: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.primary, marginBottom: 10 },
-  recordRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  statusDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
-  recordName: { fontSize: 14, fontWeight: '500' },
-  recordDetail: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  recordStatus: { fontSize: 12, fontWeight: '500' },
-  emptyText: { textAlign: 'center', color: '#6B7280', padding: 20 },
+  statLabel: { color: colors.textLight, fontSize: 14, marginTop: 4 },
+  section: { backgroundColor: colors.white, borderRadius: 12, padding: 24, marginBottom: 20, marginHorizontal: 16 },
+  sectionTitle: { color: colors.primary, fontSize: 18, fontWeight: '700', marginBottom: 16 },
+  tableHeader: { backgroundColor: '#F9FAFB', flexDirection: 'row', padding: 12, borderRadius: 8 },
+  headerText: { fontWeight: '600', fontSize: 13, color: colors.textLight },
+  dataRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: 'center' },
+  cellText: { fontSize: 14, color: colors.text },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  badgeText: { fontSize: 12, fontWeight: '500' },
+  emptyText: { textAlign: 'center', color: '#666', padding: 20 },
 });

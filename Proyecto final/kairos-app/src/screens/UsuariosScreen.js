@@ -62,7 +62,7 @@ export default function UsuariosScreen({ route }) {
   return (
     <ScrollView style={styles.container}>
       {canEdit && (
-        <View style={styles.section}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>Crear Usuario</Text>
           <TextInput style={styles.input} placeholder="Nombre" value={nombre} onChangeText={setNombre} />
           <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
@@ -78,21 +78,27 @@ export default function UsuariosScreen({ route }) {
         </View>
       )}
 
-      <View style={styles.section}>
+      <View style={styles.card}>
         <Text style={styles.sectionTitle}>Usuarios ({usuarios.length})</Text>
+        <View style={styles.tableHeaderLabelRow}>
+          <Text style={styles.tableHeaderText}>Nombre</Text>
+          <Text style={styles.tableHeaderText}>Email</Text>
+          <Text style={styles.tableHeaderText}>Rol</Text>
+          {canEdit && <Text style={styles.tableHeaderText}>Acción</Text>}
+        </View>
         {usuarios.map(u => (
-          <View key={u.uid} style={styles.userRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.userName}>{u.nombre || u.email}</Text>
-              <Text style={styles.userEmail}>{u.email} - {u.rol}</Text>
-            </View>
+          <View key={u.uid} style={styles.tableRow}>
+            <Text style={styles.cellText}>{u.nombre || u.email}</Text>
+            <Text style={styles.cellText}>{u.email}</Text>
+            <Text style={styles.cellText}>{u.rol}</Text>
             {canEdit && u.uid !== user.uid && (
-              <TouchableOpacity onPress={() => handleDelete(u.uid, u.nombre)}>
-                <Text style={styles.deleteText}>Eliminar</Text>
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(u.uid, u.nombre)}>
+                <Text style={styles.deleteBtnText}>Eliminar</Text>
               </TouchableOpacity>
             )}
           </View>
         ))}
+        {usuarios.length === 0 && <Text style={styles.empty}>No hay usuarios registrados</Text>}
       </View>
     </ScrollView>
   );
@@ -100,18 +106,21 @@ export default function UsuariosScreen({ route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  section: { backgroundColor: colors.white, borderRadius: 12, padding: 16, elevation: 1, margin: 10 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.primary, marginBottom: 10 },
-  input: { borderWidth: 2, borderColor: colors.border, borderRadius: 10, backgroundColor: '#FAFAFA', padding: 10, fontSize: 14, marginBottom: 8 },
-  rolRow: { flexDirection: 'row', marginBottom: 10 },
-  rolBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginRight: 6, backgroundColor: '#E5E7EB' },
+  card: { backgroundColor: colors.white, borderRadius: 12, padding: 24, marginBottom: 20, elevation: 1, margin: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.primary, marginBottom: 16 },
+  input: { borderWidth: 2, borderColor: colors.border, borderRadius: 10, fontSize: 15, backgroundColor: '#FAFAFA', padding: 12, marginBottom: 12, color: colors.text },
+  rolRow: { flexDirection: 'row', marginBottom: 12 },
+  rolBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginRight: 6, backgroundColor: colors.border },
   rolActive: { backgroundColor: colors.primary },
-  rolText: { fontSize: 13, color: '#666' },
+  rolText: { fontSize: 13, color: colors.textLight },
   rolTextActive: { color: colors.white, fontWeight: 'bold' },
-  createBtn: { backgroundColor: colors.primary, borderRadius: 10, padding: 12, alignItems: 'center' },
+  createBtn: { backgroundColor: colors.accent, borderRadius: 10, padding: 14, alignItems: 'center' },
   createBtnText: { color: colors.white, fontWeight: 'bold', fontSize: 15 },
-  userRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  userName: { fontSize: 15, fontWeight: '500' },
-  userEmail: { fontSize: 12, color: colors.textLight, marginTop: 2 },
-  deleteText: { color: colors.danger, fontWeight: '700', fontSize: 13 },
+  tableHeaderLabelRow: { backgroundColor: '#F9FAFB', flexDirection: 'row', padding: 12, borderRadius: 8, marginBottom: 4 },
+  tableHeaderText: { fontWeight: '600', fontSize: 13, color: colors.textLight, flex: 1 },
+  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: 'center' },
+  cellText: { fontSize: 13, color: colors.text, flex: 1 },
+  deleteBtn: { backgroundColor: colors.danger, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 14 },
+  deleteBtnText: { color: colors.white, fontSize: 12, fontWeight: 'bold' },
+  empty: { textAlign: 'center', color: colors.textLight, padding: 20 },
 });

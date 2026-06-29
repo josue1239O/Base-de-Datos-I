@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": ".",
+    "public": "kairos-app/dist",
     "ignore": [
       "firebase.json",
       "**/.*",

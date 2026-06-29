@@ -1,10 +1,9 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
-import { StatusBar } from 'expo-status-bar';
+import { createDrawerNavigator, DrawerContentScrollView } from '@react-navigation/drawer';
 
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -32,37 +31,33 @@ const screens = [
 function CustomDrawerContent(props) {
   const { user } = props;
   return (
-    <View style={{ flex: 1, backgroundColor: colors.primary }}>
-      <View style={styles.drawerLogo}>
-        <View style={styles.drawerLogoIcon}>
-          <Text style={styles.drawerLogoText}>K</Text>
-        </View>
-        <Text style={styles.drawerLogoTitle}>KAIROS</Text>
+    <View style={{ flex: 1, backgroundColor: '#1e3a5f', paddingTop: 40 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', marginBottom: 20 }}>
+        <Image source={require('./assets/icon.png')} style={{ width: 40, height: 40, borderRadius: 10, marginRight: 12 }} />
+        <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff' }}>KAIROS</Text>
       </View>
       <DrawerContentScrollView {...props} style={{ flex: 1 }}>
-        {screens
-          .filter(s => !s.roles || s.roles.includes(user?.rol))
-          .map(s => (
-            <TouchableOpacity
-              key={s.name}
-              style={[
-                styles.drawerItem,
-                props.state.index === props.state.routeNames.indexOf(s.name) && styles.drawerItemActive,
-              ]}
-              onPress={() => props.navigation.navigate(s.name)}
-            >
-              <Text style={[
-                styles.drawerItemText,
-                props.state.index === props.state.routeNames.indexOf(s.name) && styles.drawerItemTextActive,
-              ]}>{s.label}</Text>
-            </TouchableOpacity>
-          ))}
+        {screens.filter(s => !s.roles || s.roles.includes(user?.rol)).map(s => (
+          <TouchableOpacity
+            key={s.name}
+            style={[
+              { paddingVertical: 14, paddingHorizontal: 20 },
+              props.state.index === props.state.routeNames.indexOf(s.name) && { backgroundColor: 'rgba(255,255,255,0.15)' }
+            ]}
+            onPress={() => props.navigation.navigate(s.name)}
+          >
+            <Text style={[
+              { fontSize: 15, color: 'rgba(255,255,255,0.8)' },
+              props.state.index === props.state.routeNames.indexOf(s.name) && { color: '#fff', fontWeight: '600' }
+            ]}>{s.label}</Text>
+          </TouchableOpacity>
+        ))}
       </DrawerContentScrollView>
       <TouchableOpacity
-        style={styles.drawerLogout}
+        style={{ margin: 20, backgroundColor: 'rgba(239,68,68,0.2)', borderRadius: 10, padding: 14, alignItems: 'center' }}
         onPress={() => props.navigation.getParent()?.navigate('Login')}
       >
-        <Text style={styles.drawerLogoutText}>Cerrar Sesión</Text>
+        <Text style={{ color: '#EF4444', fontWeight: '600', fontSize: 15 }}>Cerrar Sesión</Text>
       </TouchableOpacity>
     </View>
   );
@@ -70,29 +65,38 @@ function CustomDrawerContent(props) {
 
 function DrawerNavigator({ route }) {
   const { user } = route.params;
+  const { width } = useWindowDimensions();
+  const isLarge = width >= 900;
   return (
-    <Drawer.Navigator
-      initialRouteName="Home"
-      drawerContent={(props) => <CustomDrawerContent {...props} user={user} />}
-      screenOptions={{
-        drawerStyle: { width: 260, backgroundColor: colors.primary },
-        headerStyle: { backgroundColor: colors.primary, elevation: 0, shadowOpacity: 0, borderBottomWidth: 0 },
-        headerTintColor: colors.white,
-        headerTitleStyle: { fontWeight: '700', fontSize: 18 },
-      }}
-    >
-      {screens
-        .filter(s => !s.roles || s.roles.includes(user?.rol))
-        .map(s => (
-          <Drawer.Screen
-            key={s.name}
-            name={s.name}
-            component={s.component}
-            initialParams={{ user }}
-            options={{ title: s.title }}
-          />
-        ))}
-    </Drawer.Navigator>
+    <View style={{ flex: 1 }}>
+      {!isLarge && (
+        <View style={{ height: 50, backgroundColor: '#1e3a5f', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 }}>
+          <Image source={require('./assets/icon.png')} style={{ width: 28, height: 28, borderRadius: 6, marginRight: 8 }} />
+          <Text style={{ fontSize: 17, fontWeight: '700', color: '#fff' }}>KAIROS</Text>
+        </View>
+      )}
+      <Drawer.Navigator
+        initialRouteName="Home"
+        drawerContent={(props) => <CustomDrawerContent {...props} user={user} />}
+        screenOptions={{
+          headerShown: false,
+          drawerType: isLarge ? 'permanent' : 'front',
+          drawerStyle: { width: 260 },
+          swipeEnabled: !isLarge,
+        }}
+      >
+        {screens
+          .filter(s => !s.roles || s.roles.includes(user?.rol))
+          .map(s => (
+            <Drawer.Screen
+              key={s.name}
+              name={s.name}
+              component={s.component}
+              initialParams={{ user }}
+            />
+          ))}
+      </Drawer.Navigator>
+    </View>
   );
 }
 
@@ -106,16 +110,3 @@ export default function App() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  drawerLogo: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 40, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', marginBottom: 10 },
-  drawerLogoIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  drawerLogoText: { fontSize: 20, fontWeight: '700', color: colors.white },
-  drawerLogoTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
-  drawerItem: { paddingVertical: 14, paddingHorizontal: 20 },
-  drawerItemActive: { backgroundColor: 'rgba(255,255,255,0.1)' },
-  drawerItemText: { fontSize: 15, color: 'rgba(255,255,255,0.8)' },
-  drawerItemTextActive: { color: colors.white, fontWeight: '600' },
-  drawerLogout: { margin: 20, backgroundColor: 'rgba(239,68,68,0.2)', borderRadius: 10, padding: 14, alignItems: 'center' },
-  drawerLogoutText: { color: colors.danger, fontWeight: '600', fontSize: 15 },
-});
